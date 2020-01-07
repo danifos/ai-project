@@ -31,7 +31,11 @@ def main():
     if args.data == 'auto':
         args.data = 'o2o' if args.model == 'FullyConnectedNetwork' else 'm2o'
     data_name = 'One2OneDataset' if args.data == 'o2o' else 'Many2OneDataset'
-    dst = ProcessedCsvDataset(root_dir='data', normalized=True)
+    dst = ProcessedCsvDataset(
+        root_dir='data',
+        split={'o2o': 'one', 'm2o': 'many'}[args.data],
+        normalized=True
+    )
     dst.make_val_from_test()
     train_dataset = lib.loader.__dict__[data_name](dst.train_feature, dst.train_label)
     test_dataset = lib.loader.__dict__[data_name](dst.test_feature, dst.test_label)

@@ -8,6 +8,6 @@ date >> $file
 echo $split >> $file
 
 echo 'DNN' >> $file
-python main.py --arch 100 200 400 400 --epochs=40 --bs 200 | tee -a $file
+python -u main.py --arch 100 200 400 400 --epochs=40 --bs 200 | tee -a $file
 echo $split >> $file
 

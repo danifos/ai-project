@@ -97,10 +97,16 @@ class MemmapDataset():
 
 
 class ProcessedCsvDataset():
-    def __init__(self, root_dir='data', normalized=True):
-        train = pd.read_csv('data/Train.csv')
-        test = pd.read_csv('data/Test.csv')
-        feature_name = train.columns.values[:-1].tolist()
+    def __init__(self, root_dir='data', split='one', normalized=True):
+        assert split == 'one' or split == 'many', 'Unknown split'
+        print('Preparing csv data ... ', end='', flush=True)
+        data = pd.read_csv(osp.join(root_dir, 'LabeledData.csv'))
+        print('done')
+        train_idx = np.load(osp.join(root_dir, '{}_train.npy').format(split))
+        test_idx = np.load(osp.join(root_dir, '{}_test.npy').format(split))
+        train = data.loc[train_idx]  # train = data.reindex(train_idx)
+        test = data.loc[test_idx]  # test = data.reindex(test_idx)
+        feature_name = data.columns.values[:-1].tolist()
         train_feature_raw = train[feature_name]
         train_label = train['label']
         test_feature_raw = test[feature_name]
@@ -118,6 +124,10 @@ class ProcessedCsvDataset():
 
         self.train_label = train_label.values
         self.test_label = test_label.values
+
+        isvalid = lambda x: not np.any(np.isnan(x))
+        assert isvalid(self.train_feature) and isvalid(self.train_label)
+        assert isvalid(self.test_feature) and isvalid(self.test_label)
 
         self.num_features = self.train_feature.shape[1]
 
@@ -181,7 +191,11 @@ class Many2OneDataset(Dataset):
         self.num_data = self.num_data - len_sequence + 1
 
     def __getitem__(self, index):
-        return self.data[index:index+self.len_sequence], self.labels[index]
+        """
+        Return consecutive L ticks, and the label for the last tick
+        """
+        return (self.data[index:index+self.len_sequence],
+                self.labels[index+self.len_sequence-1])
 
     def __len__(self):
         return self.num_data
