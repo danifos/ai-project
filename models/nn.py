@@ -11,18 +11,28 @@ from lib.loader import OneDataset, One2OneDataset, ManyDataset, Many2OneDataset,
 
 
 class FullyConnectedNetwork(nn.Module):
-    def __init__(self, num_features, hidden_units, num_classes=1):
+    def __init__(self, num_features, hidden_units, num_classes=1, len_sequence=1):
         super(FullyConnectedNetwork, self).__init__()
         self.mlps = nn.ModuleList()
-        self.mlps.append(nn.Linear(num_features, hidden_units[0]))
+        self.mlps.append(nn.Linear(num_features * len_sequence, hidden_units[0]))
         for i in range(len(hidden_units)-1):
             in_features, out_features = hidden_units[i:i+2]
             mlp = nn.Linear(in_features, out_features)
             self.mlps.append(mlp)
         self.num_classes = num_classes
         self.fc = nn.Linear(hidden_units[-1], num_classes)
+        self.use_seq = (len_sequence > 1)
 
     def forward(self, x):
+        """
+        Inputs:
+            x: N x F  /  N x L x F
+        Return:
+            x: N x 1
+        """
+        if self.use_seq:
+            N = x.shape[0]
+            x = x.view((N, -1))
         for mlp in self.mlps:
             x = mlp(x)
             x = F.relu(x)
@@ -167,8 +177,8 @@ def fit_nn(model, loader, optimizer, epochs=10, l1_rate=0,
         callback=lambda x:None, print_every=1000, val_loader=None, scheduler=None):
     for e in range(epochs):
         model = model.to(device=cfg.DEVICE)
-        model.train()
         for i, (x, y) in enumerate(loader):
+            model.train()
             x = x.to(device=cfg.DEVICE, dtype=torch.float32)
             y = y.to(device=cfg.DEVICE, dtype=torch.float32)
             logits = model(x).squeeze(1)

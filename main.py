@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--wd', type=float, default=0)                        # weight decay
     parser.add_argument('--scheduler', action='store_false', default=True)    # lr_scheduler
     parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--wavelets', type=str, default='no', choices=['no', 'only', 'both'])
     args = parser.parse_args()
     print(args)
 
@@ -46,13 +47,16 @@ def main():
 
     # Build model
     model_args = []
+    model_kwargs = {}
     if args.model == 'FullyConnectedNetwork':
         model_args = [args.arch]
+        if args.data == 'm2o':
+            model_kwargs['len_sequence'] = train_dataset.len_sequence
     elif args.model == 'ConvolutionalNeuralNetwork':
         model_args = [args.arch[:-1], args.arch[-1]]
     elif args.model == 'RecurrentNeuralNetwork':
         model_args = [args.arch[0]]
-    model = models.nn.__dict__[args.model](dst.num_features, *model_args)
+    model = models.nn.__dict__[args.model](dst.num_features, *model_args, **model_kwargs)
 
     # Make optimizer
     optimizer = None
